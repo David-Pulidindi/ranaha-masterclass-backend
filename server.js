@@ -4,8 +4,6 @@ const Razorpay = require("razorpay");
 const cors = require("cors");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
-const path = require("path");
-const fs = require("fs");
 
 const app = express();
 
@@ -25,17 +23,18 @@ if (process.env.FIREBASE_CONFIG) {
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
 
-    // Fix the private_key to replace literal \n with actual newlines
+    // Fix the private_key newlines (replace literal \n with actual newline chars)
     if (serviceAccount.private_key) {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
     }
-
   } catch (error) {
-    console.error("Invalid FIREBASE_CONFIG format");
+    console.error("Invalid FIREBASE_CONFIG format:", error);
     process.exit(1);
   }
+} else {
+  console.error("FIREBASE_CONFIG not found in environment");
+  process.exit(1);
 }
-
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
