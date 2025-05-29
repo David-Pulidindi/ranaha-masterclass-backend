@@ -6,19 +6,25 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 
-const serviceAccount = require("./firebase-service-account.json");
-
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Initialize Firebase Admin
+// --- Initialize Firebase Admin using env vars ---
+const serviceAccount = {
+  type: "service_account",
+  project_id: process.env.FIREBASE_PROJECT_ID,
+  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+};
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
+
 const db = admin.firestore();
 
-// ✅ Initialize Razorpay
+// Initialize Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -28,7 +34,7 @@ app.get("/", (req, res) => {
   res.send("✅ Razorpay + Firebase API running");
 });
 
-// ✅ Create Razorpay Order
+// Create Razorpay Order
 app.post("/create-order", async (req, res) => {
   const { name, email, phone, amount = 24900 } = req.body;
 
@@ -61,7 +67,7 @@ app.post("/create-order", async (req, res) => {
   }
 });
 
-// ✅ Verify Payment and Store Enrollment
+// Verify Payment and Store Enrollment
 app.post("/verify-payment", async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
