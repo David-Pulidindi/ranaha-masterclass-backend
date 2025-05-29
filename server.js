@@ -1,48 +1,59 @@
 require("dotenv").config();
-
 const express = require("express");
 const Razorpay = require("razorpay");
 const cors = require("cors");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 
-// Configure CORS to allow only your frontend domain
+// --- CORS Configuration ---
 const corsOptions = {
-  origin: "https://www.ranaha.in",
+  origin: ["http://localhost:3000", "https://www.ranaha.in"],
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
-
 app.use(express.json());
 
-// --- Initialize Firebase Admin using env vars ---
-const serviceAccount = {
-  type: "service_account",
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  client_email: process.env.FIREBASE_CLIENT_EMAIL,
-};
+// --- Firebase Admin Initialization ---
+let serviceAccount;
+
+if (process.env.FIREBASE_CONFIG) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+
+    // Fix the private_key to replace literal \n with actual newlines
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
+  } catch (error) {
+    console.error("Invalid FIREBASE_CONFIG format");
+    process.exit(1);
+  }
+}
+
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-
 const db = admin.firestore();
 
-// Initialize Razorpay
+// --- Razorpay Initialization ---
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// --- Routes ---
+
 app.get("/", (req, res) => {
-  res.send("✅ Razorpay + Firebase API running");
+  res.send("✅ Razorpay + Firebase API is running");
 });
 
-// Create Razorpay Order
 app.post("/create-order", async (req, res) => {
   const { name, email, phone, amount = 24900 } = req.body;
 
@@ -71,11 +82,10 @@ app.post("/create-order", async (req, res) => {
     res.json(order);
   } catch (err) {
     console.error("Order creation failed:", err);
-    res.status(500).json({ error: "Order creation failed" });
+    res.status(500).json({ error: "Order creation failed", details: err.message });
   }
 });
 
-// Verify Payment and Store Enrollment
 app.post("/verify-payment", async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
@@ -107,10 +117,21 @@ app.post("/verify-payment", async (req, res) => {
     });
   } catch (err) {
     console.error("Verification error:", err);
-    res.status(500).json({ error: "Verification failed" });
+    res.status(500).json({ error: "Verification failed", details: err.message });
   }
 });
 
+app.get("/test-firebase", async (req, res) => {
+  try {
+    const doc = await db.collection("test").doc("sample").get();
+    res.json(doc.exists ? doc.data() : { message: "No data found" });
+  } catch (err) {
+    console.error("Firebase test failed", err);
+    res.status(500).json({ error: "Admin SDK not working", details: err.message });
+  }
+});
+
+// --- Start Server ---
 const PORT = process.env.PORT || 5101;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
