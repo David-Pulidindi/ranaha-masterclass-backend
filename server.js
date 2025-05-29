@@ -7,7 +7,15 @@ const admin = require("firebase-admin");
 const crypto = require("crypto");
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow only your frontend domain
+const corsOptions = {
+  origin: "https://www.ranaha.in",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // --- Initialize Firebase Admin using env vars ---
