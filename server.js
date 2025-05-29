@@ -17,6 +17,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- Firebase Admin Initialization ---
+if (!process.env.FIREBASE_PRIVATE_KEY) {
+  console.error("❌ FIREBASE_PRIVATE_KEY is missing or not properly quoted in .env");
+}
+
 const serviceAccount = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
@@ -34,6 +38,7 @@ const serviceAccount = {
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
+
 const db = admin.firestore();
 
 // --- Razorpay Initialization ---
@@ -43,7 +48,6 @@ const razorpay = new Razorpay({
 });
 
 // --- Routes ---
-
 app.get("/", (req, res) => {
   res.send("✅ Razorpay + Firebase API is running");
 });
@@ -75,7 +79,7 @@ app.post("/create-order", async (req, res) => {
 
     res.json(order);
   } catch (err) {
-    console.error("Order creation failed:", err);
+    console.error("❌ Order creation failed:", err.message);
     res.status(500).json({ error: "Order creation failed", details: err.message });
   }
 });
@@ -110,7 +114,7 @@ app.post("/verify-payment", async (req, res) => {
       enrollmentId,
     });
   } catch (err) {
-    console.error("Verification error:", err);
+    console.error("❌ Verification error:", err.message);
     res.status(500).json({ error: "Verification failed", details: err.message });
   }
 });
@@ -120,7 +124,7 @@ app.get("/test-firebase", async (req, res) => {
     const doc = await db.collection("test").doc("sample").get();
     res.json(doc.exists ? doc.data() : { message: "No data found" });
   } catch (err) {
-    console.error("Firebase test failed", err);
+    console.error("❌ Firebase test failed", err.message);
     res.status(500).json({ error: "Admin SDK not working", details: err.message });
   }
 });
