@@ -12,8 +12,20 @@ const corsOptions = {
   origin: ["http://localhost:3000", "https://www.ranaha.in"],
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // optional: if your frontend sends cookies or auth headers
 };
+
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // handle preflight requests
+
+// OPTIONAL: fallback headers to ensure CORS compliance on Render
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://www.ranaha.in");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+
 app.use(express.json());
 
 // --- Firebase Admin Initialization ---
