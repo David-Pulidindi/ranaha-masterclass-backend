@@ -66,7 +66,7 @@ app.get("/", (req, res) => {
 
 app.post("/create-order", async (req, res) => {
   const { name, email, phone } = req.body;
-  const amount = 100;
+  const amount = 9900;
 
   if (!name || !email || !phone) {
     return res.status(400).json({ error: "Missing user details" });
